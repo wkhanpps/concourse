@@ -75,6 +75,8 @@ func NewHandler(
 	dbWall db.Wall,
 	clock clock.Clock,
 
+	listAllJobsWatcher jobserver.ListAllJobsWatcher,
+
 	enableArchivePipeline bool,
 ) (http.Handler, error) {
 
@@ -89,7 +91,7 @@ func NewHandler(
 
 	buildServer := buildserver.NewServer(logger, externalURL, dbTeamFactory, dbBuildFactory, eventHandlerFactory)
 	checkServer := checkserver.NewServer(logger, dbCheckFactory)
-	jobServer := jobserver.NewServer(logger, externalURL, secretManager, dbJobFactory, dbCheckFactory)
+	jobServer := jobserver.NewServer(logger, externalURL, secretManager, dbJobFactory, dbCheckFactory, listAllJobsWatcher)
 	resourceServer := resourceserver.NewServer(logger, secretManager, varSourcePool, dbCheckFactory, dbResourceFactory, dbResourceConfigFactory)
 
 	versionServer := versionserver.NewServer(logger, externalURL)
