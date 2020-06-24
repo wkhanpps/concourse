@@ -261,7 +261,7 @@ all =
                                 }
                         )
                     |> Header.handleDelivery
-                        (Subscription.EventsReceived <|
+                        (Subscription.BuildEventsReceived <|
                             Ok
                                 [ { data =
                                         STModels.BuildStatus BuildStatusSucceeded <|
@@ -289,7 +289,7 @@ all =
                     |> Header.handleCallback
                         (Callback.BuildFetched <| Ok build)
                     |> Header.handleDelivery
-                        (Subscription.EventsReceived <|
+                        (Subscription.BuildEventsReceived <|
                             Ok
                                 [ { data = STModels.BuildStatus BuildStatusStarted <| Time.millisToPosix 0
                                   , url = "http://localhost:8080/api/v1/builds/1/events"
