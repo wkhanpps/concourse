@@ -20,12 +20,9 @@ import DashboardTests
         , givenDataUnauthenticated
         , green
         , iconSelector
-        , job
-        , jobWithNameTransitionedAt
         , lightGrey
         , middleGrey
         , orange
-        , otherJob
         , red
         , running
         , userWithRoles
@@ -73,15 +70,22 @@ all =
                 -> Query.Single ApplicationMsgs.TopLevelMessage
             pipelineWithStatus status isRunning =
                 let
-                    jobFunc =
-                        if isRunning then
-                            job >> running
+                    job =
+                        Data.job 0 0
+                            |> Data.withPipelineName "pipeline"
+                            |> Data.withFinishedBuild
+                                (Data.jobBuild status |> Just)
+                            |> Data.withTransitionBuild
+                                (Data.jobBuild status |> Just)
+                            |> (if isRunning then
+                                    running
 
-                        else
-                            job
+                                else
+                                    identity
+                               )
                 in
                 Application.handleCallback
-                    (Callback.AllJobsFetched <| Ok [ jobFunc status ])
+                    (Callback.AllJobsFetched <| Ok [ job ])
                     >> Tuple.first
                     >> givenDataUnauthenticated [ { id = 0, name = "team" } ]
                     >> Tuple.first
@@ -491,8 +495,16 @@ all =
                                 |> Application.handleCallback
                                     (Callback.AllJobsFetched <|
                                         Ok
-                                            [ job firstStatus
-                                            , otherJob secondStatus
+                                            [ Data.job 0 0
+                                                |> Data.withName "job"
+                                                |> Data.withPipelineName "pipeline"
+                                                |> Data.withFinishedBuild
+                                                    (Data.jobBuild firstStatus |> Just)
+                                            , Data.job 1 0
+                                                |> Data.withName "other-job"
+                                                |> Data.withPipelineName "pipeline"
+                                                |> Data.withFinishedBuild
+                                                    (Data.jobBuild secondStatus |> Just)
                                             ]
                                     )
                                 |> Tuple.first
@@ -717,8 +729,16 @@ all =
                                     |> Application.handleCallback
                                         (Callback.AllJobsFetched <|
                                             Ok
-                                                [ job firstStatus
-                                                , otherJob secondStatus
+                                                [ Data.job 0 0
+                                                    |> Data.withName "job"
+                                                    |> Data.withPipelineName "pipeline"
+                                                    |> Data.withFinishedBuild
+                                                        (Data.jobBuild firstStatus |> Just)
+                                                , Data.job 1 0
+                                                    |> Data.withName "other-job"
+                                                    |> Data.withPipelineName "pipeline"
+                                                    |> Data.withFinishedBuild
+                                                        (Data.jobBuild secondStatus |> Just)
                                                 ]
                                         )
                                     |> Tuple.first
@@ -1008,7 +1028,9 @@ all =
                             (Callback.AllJobsFetched <|
                                 let
                                     baseJob =
-                                        job BuildStatusErrored
+                                        Data.job 0 0
+                                            |> Data.withFinishedBuild
+                                                (Data.jobBuild BuildStatusErrored |> Just)
                                 in
                                 Ok
                                     [ { baseJob | pipelineName = "other-pipeline" } ]
@@ -1248,7 +1270,7 @@ all =
                                     [ { id = 0, name = "team" } ]
                                 |> Tuple.first
                                 |> Application.handleDelivery
-                                    (CachedJobsReceived <| Ok [ Data.job 0 ])
+                                    (CachedJobsReceived <| Ok [ Data.job 0 0 ])
                                 |> Tuple.first
                                 |> Application.handleCallback
                                     (Callback.AllPipelinesFetched <|
@@ -1510,10 +1532,12 @@ all =
                                 |> Application.handleCallback
                                     (Callback.AllJobsFetched <|
                                         Ok
-                                            [ jobWithNameTransitionedAt
-                                                "job"
-                                                (Just <| Time.millisToPosix 0)
-                                                BuildStatusSucceeded
+                                            [ Data.job 0 0
+                                                |> Data.withPipelineName "pipeline"
+                                                |> Data.withFinishedBuild
+                                                    (Data.jobBuild BuildStatusSucceeded |> Just)
+                                                |> Data.withTransitionBuild
+                                                    (Data.jobBuild BuildStatusSucceeded |> Just)
                                             ]
                                     )
                                 |> Tuple.first

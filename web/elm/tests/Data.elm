@@ -6,6 +6,7 @@ module Data exposing
     , httpNotFound
     , httpNotImplemented
     , httpUnauthorized
+    , input
     , job
     , jobBuild
     , jobId
@@ -18,10 +19,17 @@ module Data exposing
     , version
     , versionedResource
     , withArchived
+    , withDisableManualTrigger
+    , withFinishedBuild
     , withGroups
+    , withInputs
     , withName
+    , withNextBuild
     , withPaused
+    , withPipelineName
     , withPublic
+    , withTeamName
+    , withTransitionBuild
     )
 
 import Browser.Dom
@@ -188,9 +196,10 @@ withGroups groups p =
     { p | groups = groups }
 
 
-job : Int -> Concourse.Job
-job pipelineID =
-    { name = jobName
+job : Int -> Int -> Concourse.Job
+job jobID pipelineID =
+    { id = jobID
+    , name = jobName
     , pipelineName = "pipeline-" ++ String.fromInt pipelineID
     , teamName = teamName
     , nextBuild = Nothing
@@ -201,6 +210,74 @@ job pipelineID =
     , inputs = []
     , outputs = []
     , groups = []
+    }
+
+
+withNextBuild :
+    Maybe Concourse.Build
+    -> { r | nextBuild : Maybe Concourse.Build, name : String, pipelineName : String, teamName : String }
+    -> { r | nextBuild : Maybe Concourse.Build, name : String, pipelineName : String, teamName : String }
+withNextBuild build j =
+    { j | nextBuild = build |> Maybe.map (updateJobIdentifier j) }
+
+
+withFinishedBuild :
+    Maybe Concourse.Build
+    -> { r | finishedBuild : Maybe Concourse.Build, name : String, pipelineName : String, teamName : String }
+    -> { r | finishedBuild : Maybe Concourse.Build, name : String, pipelineName : String, teamName : String }
+withFinishedBuild build j =
+    { j | finishedBuild = build |> Maybe.map (updateJobIdentifier j) }
+
+
+withTransitionBuild :
+    Maybe Concourse.Build
+    -> { r | transitionBuild : Maybe Concourse.Build, name : String, pipelineName : String, teamName : String }
+    -> { r | transitionBuild : Maybe Concourse.Build, name : String, pipelineName : String, teamName : String }
+withTransitionBuild build j =
+    { j | transitionBuild = build |> Maybe.map (updateJobIdentifier j) }
+
+
+updateJobIdentifier :
+    { r | name : String, pipelineName : String, teamName : String }
+    -> Concourse.Build
+    -> Concourse.Build
+updateJobIdentifier j b =
+    { b
+        | job =
+            Just
+                { jobName = j.name
+                , pipelineName = j.pipelineName
+                , teamName = j.teamName
+                }
+    }
+
+
+withInputs : List Concourse.JobInput -> { r | inputs : List Concourse.JobInput } -> { r | inputs : List Concourse.JobInput }
+withInputs inputs j =
+    { j | inputs = inputs }
+
+
+withDisableManualTrigger : Bool -> { r | disableManualTrigger : Bool } -> { r | disableManualTrigger : Bool }
+withDisableManualTrigger t j =
+    { j | disableManualTrigger = t }
+
+
+withPipelineName : String -> { r | pipelineName : String } -> { r | pipelineName : String }
+withPipelineName name j =
+    { j | pipelineName = name }
+
+
+withTeamName : String -> { r | teamName : String } -> { r | teamName : String }
+withTeamName name j =
+    { j | teamName = name }
+
+
+input : List String -> Concourse.JobInput
+input passed =
+    { name = "input"
+    , resource = "res0"
+    , passed = passed
+    , trigger = True
     }
 
 
