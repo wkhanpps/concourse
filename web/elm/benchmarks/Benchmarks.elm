@@ -841,9 +841,10 @@ steps =
         }
 
 
-sampleJob : String -> List String -> Concourse.Job
-sampleJob name passed =
-    { name = name
+sampleJob : Int -> String -> List String -> Concourse.Job
+sampleJob id name passed =
+    { id = id
+    , name = name
     , pipelineName = "pipeline"
     , teamName = "team"
     , nextBuild = Nothing
@@ -865,11 +866,11 @@ sampleJob name passed =
 
 sampleJobs : List Concourse.Job
 sampleJobs =
-    [ sampleJob "job1" []
-    , sampleJob "job2a" [ "job1" ]
-    , sampleJob "job2b" [ "job1" ]
-    , sampleJob "job3" [ "job2a" ]
-    , sampleJob "job4" [ "job3" ]
+    [ sampleJob 0 "job1" []
+    , sampleJob 1 "job2a" [ "job1" ]
+    , sampleJob 2 "job2b" [ "job1" ]
+    , sampleJob 3 "job3" [ "job2a" ]
+    , sampleJob 4 "job4" [ "job3" ]
     ]
 
 
@@ -966,7 +967,8 @@ jobByName jobs job =
             a
 
         Nothing ->
-            { name = ""
+            { id = 0
+            , name = ""
             , pipelineName = ""
             , teamName = ""
             , nextBuild = Nothing
