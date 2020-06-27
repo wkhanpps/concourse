@@ -105,7 +105,7 @@ all =
                     >> Application.handleDelivery
                         (RouteChanged <|
                             Routes.Dashboard <|
-                                Routes.Normal Nothing
+                                { searchType = Routes.Normal "", dashboardView = Routes.ViewNonArchivedPipelines }
                         )
                     >> Tuple.second
                     >> Common.contains CloseBuildEventStream
@@ -131,6 +131,26 @@ all =
                         )
                     >> Tuple.second
                     >> Common.notContains CloseBuildEventStream
+            , test "close ListAllJobsEventStream when navigating from Dashboard to Pipeline" <|
+                init "/"
+                    >> Application.handleDelivery
+                        (RouteChanged <|
+                            Routes.Pipeline
+                                { id = { teamName = "t", pipelineName = "p" }
+                                , groups = []
+                                }
+                        )
+                    >> Tuple.second
+                    >> Common.contains CloseListAllJobsEventStream
+            , test "don't close ListAllJobsEventStream when navigating to HD view" <|
+                init "/"
+                    >> Application.handleDelivery
+                        (RouteChanged <|
+                            Routes.Dashboard
+                                { searchType = Routes.HighDensity, dashboardView = Routes.ViewNonArchivedPipelines }
+                        )
+                    >> Tuple.second
+                    >> Common.notContains CloseListAllJobsEventStream
             ]
         ]
 

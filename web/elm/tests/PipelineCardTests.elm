@@ -1427,7 +1427,7 @@ all =
                                 |> Application.handleCallback
                                     (Callback.AllJobsFetched <|
                                         Ok
-                                            [ Data.job 0 ]
+                                            [ Data.job 0 0 ]
                                     )
                     in
                     [ test "status section is empty" <|
