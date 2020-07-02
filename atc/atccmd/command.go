@@ -26,6 +26,7 @@ import (
 	"github.com/concourse/concourse/atc/api/auth"
 	"github.com/concourse/concourse/atc/api/buildserver"
 	"github.com/concourse/concourse/atc/api/containerserver"
+	"github.com/concourse/concourse/atc/api/jobserver"
 	"github.com/concourse/concourse/atc/api/pipelineserver"
 	"github.com/concourse/concourse/atc/api/policychecker"
 	"github.com/concourse/concourse/atc/auditor"
@@ -248,6 +249,8 @@ type RunCommand struct {
 	SystemClaimKey        string   `long:"system-claim-key" default:"aud" description:"The token claim key to use when matching system-claim-values"`
 	SystemClaimValues     []string `long:"system-claim-value" default:"concourse-worker" description:"Configure which token requests should be considered 'system' requests."`
 	EnableArchivePipeline bool     `long:"enable-archive-pipeline" description:"Enable /api/v1/teams/{team}/pipelines/{pipeline}/archive endpoint."`
+
+	EnableWatchEndpoints bool `long:"enable-watch-endpoints" description:"Enable watching API endpoints for changes."`
 
 	EnableBuildRerunWhenWorkerDisappears bool `long:"enable-rerun-when-worker-disappears" description:"Enable automatically build rerun when worker disappears"`
 }
@@ -731,9 +734,14 @@ func (cmd *RunCommand) constructAPIMembers(
 
 	middleware := token.NewMiddleware(cmd.Auth.AuthFlags.SecureCookies)
 
-	listAllJobsWatcher, err := watch.NewListAllJobsWatcher(logger.Session("list-all-jobs-watcher"), dbConn, lockFactory)
-	if err != nil {
-		return nil, err
+	var listAllJobsWatcher jobserver.ListAllJobsWatcher
+	if cmd.EnableWatchEndpoints {
+		listAllJobsWatcher, err = watch.NewListAllJobsWatcher(logger.Session("list-all-jobs-watcher"), dbConn, lockFactory)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		listAllJobsWatcher = watch.DisabledListAllJobsWatcher{}
 	}
 
 	apiHandler, err := cmd.constructAPIHandler(
@@ -1754,7 +1762,7 @@ func (cmd *RunCommand) constructAPIHandler(
 	tokenVerifier accessor.TokenVerifier,
 	notifications db.NotificationsBus,
 	policyChecker *policy.Checker,
-	listAllJobsWatcher *watch.ListAllJobsWatcher,
+	listAllJobsWatcher jobserver.ListAllJobsWatcher,
 ) (http.Handler, error) {
 
 	checkPipelineAccessHandlerFactory := auth.NewCheckPipelineAccessHandlerFactory(teamFactory)
