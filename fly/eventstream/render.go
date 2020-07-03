@@ -58,6 +58,7 @@ func Render(dst io.Writer, events concourse.BuildEvents, options RenderOptions) 
 
 			switch e.Status {
 			case "started":
+				return nil
 			case "succeeded":
 				printColor = ui.SucceededColor
 			case "failed":
