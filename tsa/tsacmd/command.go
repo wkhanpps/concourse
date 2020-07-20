@@ -15,7 +15,6 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"github.com/concourse/concourse/atc"
-	"github.com/concourse/concourse/skymarshal/token"
 	"github.com/concourse/concourse/tsa"
 	"github.com/concourse/flag"
 	"github.com/tedsuo/ifrit"
@@ -128,8 +127,7 @@ func (cmd *TSACommand) Runner(args []string) (ifrit.Runner, error) {
 	ctx := context.Background()
 
 	tokenSource := authConfig.TokenSource(ctx)
-	idTokenSource := token.NewTokenSource(tokenSource)
-	httpClient := oauth2.NewClient(ctx, idTokenSource)
+	httpClient := oauth2.NewClient(ctx, tokenSource)
 
 	server := &server{
 		logger:            logger,
