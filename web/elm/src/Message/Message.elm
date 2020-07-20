@@ -111,6 +111,10 @@ type alias VersionId =
     Concourse.VersionedResourceIdentifier
 
 
+type alias DatabaseID =
+    Int
+
+
 type DropTarget
     = Before String
     | After String
