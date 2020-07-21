@@ -61,6 +61,7 @@ import (
 	"github.com/concourse/concourse/web"
 	"github.com/concourse/flag"
 	"github.com/concourse/retryhttp"
+	"gopkg.in/square/go-jose.v2/jwt"
 
 	"github.com/cppforlife/go-semi-semantic/version"
 	multierror "github.com/hashicorp/go-multierror"
@@ -1098,6 +1099,7 @@ func (cmd *RunCommand) gcComponents(
 	dbContainerRepository := db.NewContainerRepository(gcConn)
 	dbArtifactLifecycle := db.NewArtifactLifecycle(gcConn)
 	dbCheckLifecycle := db.NewCheckLifecycle(gcConn)
+	dbAccessTokenLifecycle := db.NewAccessTokenLifecycle(gcConn)
 	resourceConfigCheckSessionLifecycle := db.NewResourceConfigCheckSessionLifecycle(gcConn)
 	dbBuildFactory := db.NewBuildFactory(gcConn, lockFactory, cmd.GC.OneOffBuildGracePeriod, cmd.GC.FailedGracePeriod)
 	dbResourceConfigFactory := db.NewResourceConfigFactory(gcConn, lockFactory)
@@ -1115,6 +1117,7 @@ func (cmd *RunCommand) gcComponents(
 		atc.ComponentCollectorVolumes:           gc.NewVolumeCollector(dbVolumeRepository, cmd.GC.MissingGracePeriod),
 		atc.ComponentCollectorContainers:        gc.NewContainerCollector(dbContainerRepository, cmd.GC.MissingGracePeriod, cmd.GC.HijackGracePeriod),
 		atc.ComponentCollectorCheckSessions:     gc.NewResourceConfigCheckSessionCollector(resourceConfigCheckSessionLifecycle),
+		atc.ComponentCollectorAccessTokens:      gc.NewAccessTokensCollector(dbAccessTokenLifecycle, jwt.DefaultLeeway),
 	}
 
 	var components []RunnableComponent

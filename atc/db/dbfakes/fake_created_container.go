@@ -21,18 +21,6 @@ type FakeCreatedContainer struct {
 		result1 db.DestroyingContainer
 		result2 error
 	}
-	DiscontinueStub        func() (db.DestroyingContainer, error)
-	discontinueMutex       sync.RWMutex
-	discontinueArgsForCall []struct {
-	}
-	discontinueReturns struct {
-		result1 db.DestroyingContainer
-		result2 error
-	}
-	discontinueReturnsOnCall map[int]struct {
-		result1 db.DestroyingContainer
-		result2 error
-	}
 	HandleStub        func() string
 	handleMutex       sync.RWMutex
 	handleArgsForCall []struct {
