@@ -220,13 +220,8 @@ var _ = Describe("Scanner", func() {
 
 						It("sets the check error", func() {
 							Expect(fakeResourceType.SetCheckSetupErrorCallCount()).To(Equal(1))
-							Expect(fakeResource.SetCheckSetupErrorCallCount()).To(Equal(1))
-							err := fakeResource.SetCheckSetupErrorArgsForCall(0)
-							Expect(err.Error()).To(ContainSubstring("parent type 'custom-type' error:"))
-						})
-
-						It("does not create a check", func() {
-							Expect(fakeCheckFactory.TryCreateCheckCallCount()).To(Equal(0))
+							err := fakeResourceType.SetCheckSetupErrorArgsForCall(0)
+							Expect(err.Error()).To(ContainSubstring("invalid duration not-a-duration"))
 						})
 					})
 
@@ -255,6 +250,21 @@ var _ = Describe("Scanner", func() {
 
 							It("sends a notification for the checker to run", func() {
 								Expect(fakeCheckFactory.NotifyCheckerCallCount()).To(Equal(1))
+							})
+						})
+
+						Context("when the resource does not need to be checked", func() {
+							BeforeEach(func() {
+								// e.g. put-only resources
+								fakeCheckFactory.ResourcesReturns([]db.Resource{}, nil)
+							})
+
+							It("still checks the parent type", func() {
+								Expect(fakeCheckFactory.TryCreateCheckCallCount()).To(Equal(1))
+
+								_, checkable, _, _, manuallyTriggered := fakeCheckFactory.TryCreateCheckArgsForCall(0)
+								Expect(checkable).To(Equal(fakeResourceType))
+								Expect(manuallyTriggered).To(BeFalse())
 							})
 						})
 					})

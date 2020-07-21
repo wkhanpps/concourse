@@ -67,37 +67,44 @@ func (s *scanner) Run(ctx context.Context) error {
 	waitGroup := new(sync.WaitGroup)
 	resourceTypesChecked := &sync.Map{}
 
+	for _, resourceType := range resourceTypes {
+		waitGroup.Add(1)
+		resourceTypesChecked.Store(resourceType.ID(), true)
+		go s.scan(spanCtx, resourceType, resourceTypes, resourceTypesChecked, waitGroup)
+	}
+
 	for _, resource := range resources {
 		waitGroup.Add(1)
-
-		go func(resource db.Resource, resourceTypes db.ResourceTypes) {
-			loggerData := lager.Data{
-				"resource_id":   strconv.Itoa(resource.ID()),
-				"resource_name": resource.Name(),
-				"pipeline_name": resource.PipelineName(),
-				"team_name":     resource.TeamName(),
-			}
-			defer func() {
-				if r := recover(); r != nil {
-					err = fmt.Errorf("panic in scanner run %s: %v", loggerData, r)
-
-					fmt.Fprintf(os.Stderr, "%s\n %s\n", err.Error(), string(debug.Stack()))
-					s.logger.Error("panic-in-scanner-run", err)
-
-					s.setCheckError(s.logger, resource, err)
-				}
-			}()
-			defer waitGroup.Done()
-
-			err := s.check(spanCtx, resource, resourceTypes, resourceTypesChecked)
-			s.setCheckError(s.logger, resource, err)
-
-		}(resource, resourceTypes)
+		go s.scan(spanCtx, resource, resourceTypes, resourceTypesChecked, waitGroup)
 	}
 
 	waitGroup.Wait()
 
 	return s.checkFactory.NotifyChecker()
+}
+
+func (s *scanner) scan(spanCtx context.Context, checkable db.Checkable, resourceTypes db.ResourceTypes, resourceTypesChecked *sync.Map, waitGroup *sync.WaitGroup) {
+	loggerData := lager.Data{
+		"team":                     checkable.TeamName(),
+		"pipeline":                 checkable.PipelineName(),
+		"name":                     checkable.Name(),
+		"type":                     checkable.Type(),
+		"resource_config_scope_id": strconv.Itoa(checkable.ResourceConfigScopeID()),
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err := fmt.Errorf("panic in scanner run %s: %v", loggerData, r)
+
+			fmt.Fprintf(os.Stderr, "%s\n %s\n", err.Error(), string(debug.Stack()))
+			s.logger.Error("panic-in-scanner-run", err)
+
+			s.setCheckError(s.logger, checkable, err)
+		}
+	}()
+	defer waitGroup.Done()
+
+	err := s.check(spanCtx, checkable, resourceTypes, resourceTypesChecked)
+	s.setCheckError(s.logger, checkable, err)
 }
 
 func (s *scanner) check(ctx context.Context, checkable db.Checkable, resourceTypes db.ResourceTypes, resourceTypesChecked *sync.Map) error {
