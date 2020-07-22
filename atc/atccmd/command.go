@@ -1731,7 +1731,10 @@ func (cmd *RunCommand) constructTokenVerifier(accessTokenFactory db.AccessTokenF
 		validClients = append(validClients, clientId)
 	}
 
-	return accessor.NewVerifier(accessTokenFactory, validClients)
+	MiB := 1024 * 1024
+	claimsCacher := accessor.NewClaimsCacher(accessTokenFactory, 1 * MiB)
+
+	return accessor.NewVerifier(claimsCacher, validClients)
 }
 
 func (cmd *RunCommand) constructAPIHandler(
@@ -1786,7 +1789,7 @@ func (cmd *RunCommand) constructAPIHandler(
 		100,
 	)
 
-	cacher := accessor.NewCacher(
+	teamsCacher := accessor.NewTeamsCacher(
 		logger,
 		notifications,
 		teamFactory,
@@ -1818,7 +1821,7 @@ func (cmd *RunCommand) constructAPIHandler(
 			logger,
 			accessFactory,
 			tokenVerifier,
-			cacher,
+			teamsCacher,
 			batcher,
 			aud,
 			customRoles,
