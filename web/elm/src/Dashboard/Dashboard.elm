@@ -1175,22 +1175,39 @@ pipelinesView session params =
                                 }
                                 favoritedPipelines
                     in
-                    Group.viewFavoritePipelines
-                        session
-                        { dragState = NotDragging
-                        , dropState = NotDropping
-                        , now = params.now
-                        , hovered = session.hovered
-                        , pipelineRunningKeyframes = session.pipelineRunningKeyframes
-                        , pipelinesWithResourceErrors = params.pipelinesWithResourceErrors
-                        , pipelineLayers = params.pipelineLayers
-                        , pipelineCards = layout.pipelineCards
-                        , headers = layout.headers
-                        , groupCardsHeight = layout.height
-                        , pipelineJobs = params.pipelineJobs
-                        , jobs = jobs
-                        }
-                        favoritedPipelines
+                    Html.div []
+                        [ Html.div
+                            [ style "font-size" "22px"
+                            , style "font-weight" Views.Styles.fontWeightBold
+                            , style "padding" "30px 0 10px 25px"
+                            , style "margin-left" "0.5rem"
+                            ]
+                            [ Html.text "favorite pipelines" ]
+                        , Group.viewFavoritePipelines
+                            session
+                            { dragState = NotDragging
+                            , dropState = NotDropping
+                            , now = params.now
+                            , hovered = session.hovered
+                            , pipelineRunningKeyframes = session.pipelineRunningKeyframes
+                            , pipelinesWithResourceErrors = params.pipelinesWithResourceErrors
+                            , pipelineLayers = params.pipelineLayers
+                            , pipelineCards = layout.pipelineCards
+                            , headers = layout.headers
+                            , groupCardsHeight = layout.height
+                            , pipelineJobs = params.pipelineJobs
+                            , jobs = jobs
+                            }
+                            favoritedPipelines
+                        , Views.Styles.separator 30
+                        , Html.div
+                            [ style "font-size" "22px"
+                            , style "font-weight" Views.Styles.fontWeightBold
+                            , style "padding" "30px 0 10px 25px"
+                            , style "margin-left" "0.5rem"
+                            ]
+                            [ Html.text "all pipelines" ]
+                        ]
                         |> (\html ->
                                 ( html
                                 , layout.height
