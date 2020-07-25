@@ -73,6 +73,7 @@ type DomID
     | JobGroup Int
     | StepTab String Int
     | StepHeader String
+    | StepSubHeader String Int
     | ShowSearchButton
     | ClearSearchButton
     | LoginButton
