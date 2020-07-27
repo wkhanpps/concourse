@@ -15,7 +15,6 @@ import (
 	"github.com/concourse/concourse/atc/db"
 	"github.com/concourse/concourse/atc/metric"
 	"github.com/concourse/concourse/tracing"
-	"github.com/pkg/errors"
 )
 
 func NewScanner(
@@ -65,25 +64,22 @@ func (s *scanner) Run(ctx context.Context) error {
 	}
 
 	waitGroup := new(sync.WaitGroup)
-	resourceTypesChecked := &sync.Map{}
-
 	for _, resourceType := range resourceTypes {
 		waitGroup.Add(1)
-		resourceTypesChecked.Store(resourceType.ID(), true)
-		go s.scan(spanCtx, resourceType, resourceTypes, resourceTypesChecked, waitGroup)
+		go s.scan(spanCtx, resourceType, resourceTypes, waitGroup)
 	}
+	waitGroup.Wait()  // guarantee the scans for resource-types occurs before resources, makes the tests more deterministic
 
 	for _, resource := range resources {
 		waitGroup.Add(1)
-		go s.scan(spanCtx, resource, resourceTypes, resourceTypesChecked, waitGroup)
+		go s.scan(spanCtx, resource, resourceTypes, waitGroup)
 	}
-
 	waitGroup.Wait()
 
 	return s.checkFactory.NotifyChecker()
 }
 
-func (s *scanner) scan(spanCtx context.Context, checkable db.Checkable, resourceTypes db.ResourceTypes, resourceTypesChecked *sync.Map, waitGroup *sync.WaitGroup) {
+func (s *scanner) scan(spanCtx context.Context, checkable db.Checkable, resourceTypes db.ResourceTypes, waitGroup *sync.WaitGroup) {
 	loggerData := lager.Data{
 		"team":                     checkable.TeamName(),
 		"pipeline":                 checkable.PipelineName(),
@@ -103,11 +99,11 @@ func (s *scanner) scan(spanCtx context.Context, checkable db.Checkable, resource
 	}()
 	defer waitGroup.Done()
 
-	err := s.check(spanCtx, checkable, resourceTypes, resourceTypesChecked)
+	err := s.check(spanCtx, checkable, resourceTypes)
 	s.setCheckError(s.logger, checkable, err)
 }
 
-func (s *scanner) check(ctx context.Context, checkable db.Checkable, resourceTypes db.ResourceTypes, resourceTypesChecked *sync.Map) error {
+func (s *scanner) check(ctx context.Context, checkable db.Checkable, resourceTypes db.ResourceTypes) error {
 
 	var err error
 
@@ -119,20 +115,6 @@ func (s *scanner) check(ctx context.Context, checkable db.Checkable, resourceTyp
 		"resource_config_scope_id": strconv.Itoa(checkable.ResourceConfigScopeID()),
 	})
 	defer span.End()
-
-	parentType, found := resourceTypes.Parent(checkable)
-	if found {
-		if _, exists := resourceTypesChecked.LoadOrStore(parentType.ID(), true); !exists {
-			// only create a check for resource type if it has not been checked yet
-			err = s.check(spanCtx, parentType, resourceTypes, resourceTypesChecked)
-			s.setCheckError(s.logger, parentType, err)
-
-			if err != nil {
-				s.logger.Error("failed-to-create-type-check", err)
-				return errors.Wrapf(err, "parent type '%v' error", parentType.Name())
-			}
-		}
-	}
 
 	interval := s.defaultCheckInterval
 	if checkable.HasWebhook() {
